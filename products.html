@@ -1,0 +1,58 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Articoli' %}
+{% set page_subtitle = 'Schede articolo con codice, taglia, prezzi e giacenza calcolata.' %}
+{% block content %}
+<section class="card">
+  <div class="card-head"><h2>Ricerca articoli</h2></div>
+  <form method="get" class="inline-form">
+    <input name="q" value="{{ q }}" placeholder="Cerca per codice, nome o taglia">
+    <button class="btn" type="submit">Cerca</button>
+    <a class="btn ghost" href="{{ url_for('products') }}">Reset</a>
+  </form>
+</section>
+
+{% if g.user.role == 'admin' %}
+<section class="card">
+  <div class="card-head"><h2>Nuova scheda articolo</h2><span class="badge">codice + taglia univoci</span></div>
+  <form method="post" class="grid form-grid">
+    <div><label>Codice prodotto</label><input name="product_code" required placeholder="TSH001"></div>
+    <div><label>Nome prodotto</label><input name="product_name" required placeholder="T-shirt bianca"></div>
+    <div><label>Taglia</label><input name="size" required placeholder="M"></div>
+    <div><label>Prezzo acquisto</label><input type="number" step="0.01" min="0" name="purchase_price" required></div>
+    <div><label>Prezzo vendita</label><input type="number" step="0.01" min="0" name="sale_price" required></div>
+    <div><label>Soglia minima</label><input type="number" min="0" name="min_stock" value="0"></div>
+    <div class="full"><label>Descrizione</label><textarea name="description" rows="2"></textarea></div>
+    <div class="full"><button class="btn primary" type="submit">Crea articolo</button></div>
+  </form>
+</section>
+{% endif %}
+
+<section class="card">
+  <div class="card-head"><h2>Giacenze articoli</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Codice</th><th>Nome</th><th>Descrizione</th><th>Taglia</th><th>Giacenza</th><th>Acquisto</th><th>Vendita</th><th>Azioni</th></tr>
+      </thead>
+      <tbody>
+        {% for p in products %}
+        <tr>
+          <td>{{ p.product_code }}</td><td>{{ p.product_name }}</td><td>{{ p.description }}</td><td>{{ p.size }}</td>
+          <td><strong>{{ p.stock }}</strong></td><td>{{ p.purchase_price|eur }}</td><td>{{ p.sale_price|eur }}</td>
+          <td class="actions">
+            {% if g.user.role == 'admin' %}
+            <a class="btn small" href="{{ url_for('edit_product', product_id=p.id) }}">Modifica</a>
+            <form method="post" action="{{ url_for('delete_product', product_id=p.id) }}" onsubmit="return confirm('Eliminare questo articolo?')">
+              <button class="btn small danger" type="submit">Elimina</button>
+            </form>
+            {% else %}
+            <span class="muted">Solo consultazione</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}<tr><td colspan="8" class="muted">Nessun articolo trovato.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

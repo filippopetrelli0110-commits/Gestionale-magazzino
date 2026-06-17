@@ -1,0 +1,54 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Dashboard' %}
+{% set page_subtitle = 'Riepilogo giacenze, valori economici e ultimi movimenti.' %}
+{% block content %}
+<section class="grid cards-4">
+  <div class="card stat"><span>Varianti articolo</span><strong>{{ total_variants }}</strong></div>
+  <div class="card stat"><span>Pezzi disponibili</span><strong>{{ total_units }}</strong></div>
+  <div class="card stat"><span>Valore acquisto</span><strong>{{ total_purchase_value|eur }}</strong></div>
+  <div class="card stat"><span>Valore vendita</span><strong>{{ total_sale_value|eur }}</strong></div>
+</section>
+
+<section class="grid two-cols">
+  <div class="card">
+    <div class="card-head"><h2>Ultimi carichi</h2><a href="{{ url_for('movements', movement_type='CARICO') }}">Vedi tutti</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Documento</th><th>Articolo</th><th>Q.tà</th><th>Operatore</th><th>Data</th></tr></thead>
+        <tbody>
+          {% for m in last_loads %}
+          <tr><td>{{ m.document_number }}</td><td>{{ m.product_code }} · {{ m.product_name }} · {{ m.size }}</td><td>{{ m.quantity }}</td><td>{{ m.operator_name }}</td><td>{{ m.created_at|dt }}</td></tr>
+          {% else %}<tr><td colspan="5" class="muted">Nessun carico registrato.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-head"><h2>Ultimi scarichi</h2><a href="{{ url_for('movements', movement_type='SCARICO') }}">Vedi tutti</a></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Documento</th><th>Articolo</th><th>Q.tà</th><th>Destinatario</th><th>Data</th></tr></thead>
+        <tbody>
+          {% for m in last_unloads %}
+          <tr><td>{{ m.document_number }}</td><td>{{ m.product_code }} · {{ m.product_name }} · {{ m.size }}</td><td>{{ m.quantity }}</td><td>{{ m.recipient }}</td><td>{{ m.created_at|dt }}</td></tr>
+          {% else %}<tr><td colspan="5" class="muted">Nessuno scarico registrato.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Articoli con giacenza bassa</h2><span class="badge">soglia minima</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Codice</th><th>Nome</th><th>Taglia</th><th>Giacenza</th><th>Soglia minima</th></tr></thead>
+      <tbody>
+        {% for p in low_stock %}
+        <tr class="warning-row"><td>{{ p.product_code }}</td><td>{{ p.product_name }}</td><td>{{ p.size }}</td><td>{{ p.stock }}</td><td>{{ p.min_stock }}</td></tr>
+        {% else %}<tr><td colspan="5" class="muted">Nessun articolo sotto soglia.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

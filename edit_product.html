@@ -1,0 +1,20 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Modifica articolo' %}
+{% set page_subtitle = 'Aggiorna la scheda articolo senza alterare lo storico dei movimenti.' %}
+{% block content %}
+<section class="card narrow">
+  <form method="post" class="grid form-grid">
+    <div><label>Codice prodotto</label><input name="product_code" required value="{{ product.product_code }}"></div>
+    <div><label>Nome prodotto</label><input name="product_name" required value="{{ product.product_name }}"></div>
+    <div><label>Taglia</label><input name="size" required value="{{ product.size }}"></div>
+    <div><label>Prezzo acquisto</label><input type="number" step="0.01" min="0" name="purchase_price" required value="{{ product.purchase_price }}"></div>
+    <div><label>Prezzo vendita</label><input type="number" step="0.01" min="0" name="sale_price" required value="{{ product.sale_price }}"></div>
+    <div><label>Soglia minima</label><input type="number" min="0" name="min_stock" value="{{ product.min_stock }}"></div>
+    <div class="full"><label>Descrizione</label><textarea name="description" rows="3">{{ product.description }}</textarea></div>
+    <div class="full actions-row">
+      <button class="btn primary" type="submit">Salva modifiche</button>
+      <a class="btn ghost" href="{{ url_for('products') }}">Annulla</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

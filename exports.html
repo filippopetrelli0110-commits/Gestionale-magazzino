@@ -1,0 +1,34 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Esportazioni' %}
+{% set page_subtitle = 'Esporta le giacenze con valorizzazione economica del magazzino.' %}
+{% block content %}
+<section class="grid cards-4">
+  <div class="card stat"><span>Totale pezzi</span><strong>{{ totals.stock }}</strong></div>
+  <div class="card stat"><span>Valore acquisto</span><strong>{{ totals.purchase_value|eur }}</strong></div>
+  <div class="card stat"><span>Valore vendita</span><strong>{{ totals.sale_value|eur }}</strong></div>
+  <div class="card stat"><span>Margine teorico</span><strong>{{ totals.margin|eur }}</strong></div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Download giacenze</h2></div>
+  <div class="actions-row">
+    <a class="btn primary" href="{{ url_for('export_xlsx') }}">Esporta Excel</a>
+    <a class="btn" href="{{ url_for('export_csv') }}">Esporta CSV</a>
+    <a class="btn" href="{{ url_for('export_print') }}">Stampa / Salva PDF</a>
+  </div>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Anteprima giacenze</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Codice</th><th>Nome</th><th>Descrizione</th><th>Taglia</th><th>Giacenza</th><th>Acquisto</th><th>Vendita</th><th>Val. acquisto</th><th>Val. vendita</th><th>Margine</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr><td>{{ r.code }}</td><td>{{ r.name }}</td><td>{{ r.description }}</td><td>{{ r.size }}</td><td>{{ r.stock }}</td><td>{{ r.purchase_price|eur }}</td><td>{{ r.sale_price|eur }}</td><td>{{ r.purchase_value|eur }}</td><td>{{ r.sale_value|eur }}</td><td>{{ r.margin|eur }}</td></tr>
+        {% else %}<tr><td colspan="10" class="muted">Nessuna giacenza disponibile.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

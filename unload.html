@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Scarico magazzino' %}
+{% set page_subtitle = 'Registra l’uscita dei prodotti e genera la lista di scarico stampabile.' %}
+{% block content %}
+<section class="card narrow">
+  <div class="card-head"><h2>Nuovo scarico</h2><span class="badge">operatore: {{ g.user.name }}</span></div>
+  <form method="post" class="form-stack">
+    <label>Codice prodotto oppure nome prodotto</label>
+    <input name="identifier" required placeholder="FEL002 oppure Felpa nera">
+    <label>Taglia</label>
+    <input name="size" required placeholder="M">
+    <label>Numero pezzi scaricati</label>
+    <input type="number" min="1" name="quantity" required>
+    <label>Destinatario prodotti</label>
+    <input name="recipient" required placeholder="Mario Rossi / Squadra / Reparto">
+    <label>Note opzionali</label>
+    <textarea name="notes" rows="3" placeholder="Motivo scarico, consegna, riferimento..."></textarea>
+    <button class="btn primary" type="submit">Salva scarico e stampa lista</button>
+  </form>
+</section>
+{% endblock %}

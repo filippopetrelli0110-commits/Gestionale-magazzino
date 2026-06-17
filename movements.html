@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Storico movimenti' %}
+{% set page_subtitle = 'Archivio completo di carichi e scarichi, filtrabile e ristampabile.' %}
+{% block content %}
+<section class="card">
+  <div class="card-head"><h2>Filtri</h2></div>
+  <form method="get" class="grid filters-grid">
+    <div><label>Da data</label><input type="date" name="date_from" value="{{ filters.date_from }}"></div>
+    <div><label>A data</label><input type="date" name="date_to" value="{{ filters.date_to }}"></div>
+    <div><label>Codice</label><input name="code" value="{{ filters.code }}"></div>
+    <div><label>Nome prodotto</label><input name="name" value="{{ filters.name }}"></div>
+    <div><label>Taglia</label><input name="size" value="{{ filters.size }}"></div>
+    <div><label>Operatore</label><input name="operator" value="{{ filters.operator }}"></div>
+    <div><label>Destinatario</label><input name="recipient" value="{{ filters.recipient }}"></div>
+    <div><label>Tipo</label><select name="movement_type"><option value="">Tutti</option><option value="CARICO" {% if filters.movement_type == 'CARICO' %}selected{% endif %}>Carico</option><option value="SCARICO" {% if filters.movement_type == 'SCARICO' %}selected{% endif %}>Scarico</option></select></div>
+    <div class="full actions-row"><button class="btn primary" type="submit">Applica filtri</button><a class="btn ghost" href="{{ url_for('movements') }}">Reset</a></div>
+  </form>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Movimenti registrati</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Documento</th><th>Tipo</th><th>Articolo</th><th>Taglia</th><th>Q.tà</th><th>Destinatario</th><th>Operatore</th><th>Data</th><th>Azioni</th></tr></thead>
+      <tbody>
+      {% for m in movements %}
+        <tr>
+          <td>{{ m.document_number }}</td>
+          <td><span class="pill {{ 'green' if m.movement_type == 'CARICO' else 'red' }}">{{ m.movement_type }}</span></td>
+          <td>{{ m.product_code }} · {{ m.product_name }}</td>
+          <td>{{ m.size }}</td>
+          <td>{{ m.quantity }}</td>
+          <td>{{ m.recipient or '-' }}</td>
+          <td>{{ m.operator_name }}</td>
+          <td>{{ m.created_at|dt }}</td>
+          <td><a class="btn small" href="{{ url_for('print_movement', movement_id=m.id) }}">Apri/Stampa</a></td>
+        </tr>
+      {% else %}<tr><td colspan="9" class="muted">Nessun movimento trovato.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Utenti' %}
+{% set page_subtitle = 'Gestione accessi e ruoli per amministratori e operatori.' %}
+{% block content %}
+<section class="card narrow">
+  <div class="card-head"><h2>Nuovo utente</h2></div>
+  <form method="post" class="form-stack">
+    <label>Nome</label><input name="name" required>
+    <label>Email</label><input type="email" name="email" required>
+    <label>Password temporanea</label><input type="password" name="password" required>
+    <label>Ruolo</label>
+    <select name="role"><option value="operatore">Operatore</option><option value="admin">Amministratore</option></select>
+    <button class="btn primary" type="submit">Crea utente</button>
+  </form>
+</section>
+
+<section class="card">
+  <div class="card-head"><h2>Utenti registrati</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Nome</th><th>Email</th><th>Ruolo</th><th>Creato il</th><th>Azioni</th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.name }}</td><td>{{ u.email }}</td><td><span class="pill">{{ u.role }}</span></td><td>{{ u.created_at|dt }}</td>
+          <td>
+            {% if u.id != g.user.id %}
+            <form method="post" action="{{ url_for('delete_user', user_id=u.id) }}" onsubmit="return confirm('Eliminare questo utente?')">
+              <button class="btn small danger" type="submit">Elimina</button>
+            </form>
+            {% else %}<span class="muted">Utente attuale</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

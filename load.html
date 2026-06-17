@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Carico magazzino' %}
+{% set page_subtitle = 'Registra l’ingresso di nuovi pezzi. La giacenza si aggiorna automaticamente.' %}
+{% block content %}
+<section class="card narrow">
+  <div class="card-head"><h2>Nuovo carico</h2><span class="badge">operatore: {{ g.user.name }}</span></div>
+  <form method="post" class="form-stack">
+    <label>Codice articolo oppure nome prodotto</label>
+    <input name="identifier" required placeholder="TSH001 oppure T-shirt bianca">
+    <label>Taglia</label>
+    <input name="size" required placeholder="S / M / L / XL">
+    <label>Numero pezzi caricati</label>
+    <input type="number" min="1" name="quantity" required>
+    <label>Note opzionali</label>
+    <textarea name="notes" rows="3" placeholder="Fornitore, ordine, dettagli utili..."></textarea>
+    <button class="btn primary" type="submit">Salva carico</button>
+  </form>
+</section>
+{% endblock %}

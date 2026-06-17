@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+{% block public_content %}
+<div class="login-page">
+  <div class="login-card">
+    <div class="brand login-brand">
+      <div class="brand-mark">M</div>
+      <div>
+        <strong>Magazzino</strong>
+        <span>Abbigliamento</span>
+      </div>
+    </div>
+    <h1>Accesso gestionale</h1>
+    <p>Entra con il tuo account operatore o amministratore.</p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+    <form method="post" class="form-stack">
+      <label>Email</label>
+      <input type="email" name="email" placeholder="admin@magazzino.it" required>
+      <label>Password</label>
+      <input type="password" name="password" placeholder="admin123" required>
+      <button class="btn primary" type="submit">Accedi</button>
+    </form>
+    <div class="demo-box">
+      <strong>Account demo</strong><br>
+      Admin: admin@magazzino.it / admin123<br>
+      Operatore: operatore@magazzino.it / operatore123
+    </div>
+  </div>
+</div>
+{% endblock %}

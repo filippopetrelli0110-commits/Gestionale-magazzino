@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Giacenze magazzino</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="print-body">
+  <div class="print-actions no-print">
+    <a class="btn ghost" href="{{ url_for('exports') }}">Torna alle esportazioni</a>
+    <button class="btn primary" onclick="window.print()">Stampa / Salva PDF</button>
+  </div>
+  <main class="print-sheet wide">
+    <div class="print-head">
+      <div>
+        <h1>GIACENZE MAGAZZINO</h1>
+        <p>Report con valorizzazione economica degli articoli.</p>
+      </div>
+      <div class="print-meta">
+        <p>Totale pezzi: <strong>{{ totals.stock }}</strong></p>
+        <p>Valore acquisto: <strong>{{ totals.purchase_value|eur }}</strong></p>
+        <p>Valore vendita: <strong>{{ totals.sale_value|eur }}</strong></p>
+        <p>Margine teorico: <strong>{{ totals.margin|eur }}</strong></p>
+      </div>
+    </div>
+    <table class="print-table compact">
+      <thead><tr><th>Codice</th><th>Nome</th><th>Descrizione</th><th>Taglia</th><th>Giacenza</th><th>Prezzo acq.</th><th>Prezzo ven.</th><th>Val. acq.</th><th>Val. ven.</th><th>Margine</th></tr></thead>
+      <tbody>
+        {% for r in rows %}
+        <tr><td>{{ r.code }}</td><td>{{ r.name }}</td><td>{{ r.description }}</td><td>{{ r.size }}</td><td>{{ r.stock }}</td><td>{{ r.purchase_price|eur }}</td><td>{{ r.sale_price|eur }}</td><td>{{ r.purchase_value|eur }}</td><td>{{ r.sale_value|eur }}</td><td>{{ r.margin|eur }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

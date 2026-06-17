@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Documento {{ m.document_number }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="print-body">
+  <div class="print-actions no-print">
+    <a class="btn ghost" href="{{ url_for('movements') }}">Torna allo storico</a>
+    <button class="btn primary" onclick="window.print()">Stampa / Salva PDF</button>
+  </div>
+  <main class="print-sheet">
+    <div class="print-head">
+      <div>
+        <h1>{% if m.movement_type == 'SCARICO' %}LISTA DI SCARICO MAGAZZINO{% else %}SCHEDA DI CARICO MAGAZZINO{% endif %}</h1>
+        <p>Documento n. <strong>{{ m.document_number }}</strong></p>
+      </div>
+      <div class="print-meta">
+        <p>Data: <strong>{{ m.created_at|dt }}</strong></p>
+        <p>Operatore: <strong>{{ m.operator_name }}</strong></p>
+        {% if m.movement_type == 'SCARICO' %}<p>Destinatario: <strong>{{ m.recipient }}</strong></p>{% endif %}
+      </div>
+    </div>
+
+    <table class="print-table">
+      <thead>
+        <tr><th>Codice</th><th>Prodotto</th><th>Descrizione</th><th>Taglia</th><th>Quantità</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>{{ m.product_code }}</td>
+          <td>{{ m.product_name }}</td>
+          <td>{{ m.description }}</td>
+          <td>{{ m.size }}</td>
+          <td>{{ m.quantity }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    {% if m.notes %}
+    <div class="notes-box"><strong>Note:</strong> {{ m.notes }}</div>
+    {% endif %}
+
+    <div class="signature-grid">
+      {% if m.movement_type == 'SCARICO' %}
+      <div>Firma destinatario<br><span></span></div>
+      {% endif %}
+      <div>Firma operatore<br><span></span></div>
+    </div>
+
+    {% if m.movement_type == 'SCARICO' %}
+    <p class="muted print-note">Documento senza valorizzazione economica degli articoli scaricati.</p>
+    {% endif %}
+  </main>
+</body>
+</html>
