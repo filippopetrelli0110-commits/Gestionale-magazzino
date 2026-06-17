@@ -15,7 +15,7 @@ except Exception:  # psycopg2 serve solo quando usi Supabase/PostgreSQL
 
 from flask import Flask, render_template, request, redirect, url_for, flash, session, g, send_file, Response
 from werkzeug.security import generate_password_hash, check_password_hash
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,7 +31,8 @@ if psycopg2 is not None:
     DB_INTEGRITY_ERRORS = (sqlite3.IntegrityError, psycopg2.IntegrityError)
 else:
     DB_INTEGRITY_ERRORS = (sqlite3.IntegrityError,)
-app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static")
+
+app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "cambia-questa-chiave-in-produzione")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -377,6 +378,90 @@ def find_product(identifier, size):
     ).fetchone()
 
 
+def normalize_excel_header(value):
+    text = str(value or "").strip().lower()
+    replacements = {
+        "à": "a", "è": "e", "é": "e", "ì": "i", "ò": "o", "ù": "u",
+        " ": "_", "-": "_", ".": "_", "/": "_",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    while "__" in text:
+        text = text.replace("__", "_")
+    return text.strip("_")
+
+
+def first_present(row, names, default=""):
+    for name in names:
+        if name in row and row[name] is not None:
+            value = row[name]
+            if isinstance(value, str):
+                value = value.strip()
+            if value != "":
+                return value
+    return default
+
+
+def to_int_quantity(value):
+    if value is None or value == "":
+        raise ValueError("quantita mancante")
+    try:
+        qty = int(float(str(value).replace(",", ".")))
+    except Exception:
+        raise ValueError("quantita non valida")
+    if qty <= 0:
+        raise ValueError("quantita non positiva")
+    return qty
+
+
+def to_float_price(value, default=0):
+    if value is None or value == "":
+        return float(default)
+    text = str(value).strip().replace("€", "").replace(" ", "")
+    if "," in text and "." in text:
+        text = text.replace(".", "").replace(",", ".")
+    else:
+        text = text.replace(",", ".")
+    return float(text)
+
+
+def create_or_update_product_from_import(code, name, description, size, purchase_price, sale_price, min_stock=0):
+    db = get_db()
+    existing = db.execute(
+        "SELECT * FROM products WHERE LOWER(product_code) = LOWER(?) AND LOWER(size) = LOWER(?) LIMIT 1",
+        (code, size),
+    ).fetchone()
+    if existing:
+        # Se il prodotto esiste, aggiorniamo solo dati descrittivi/prezzi se arrivano dal file.
+        db.execute(
+            """
+            UPDATE products
+            SET product_name = COALESCE(NULLIF(?, ''), product_name),
+                description = COALESCE(NULLIF(?, ''), description),
+                purchase_price = ?,
+                sale_price = ?,
+                min_stock = ?,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+            """,
+            (name, description, purchase_price, sale_price, int(min_stock or 0), existing["id"]),
+        )
+        return db.execute("SELECT * FROM products WHERE id = ?", (existing["id"],)).fetchone(), False
+
+    db.execute(
+        """
+        INSERT INTO products
+        (product_code, product_name, description, size, purchase_price, sale_price, min_stock)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (code, name, description, size, purchase_price, sale_price, int(min_stock or 0)),
+    )
+    return db.execute(
+        "SELECT * FROM products WHERE LOWER(product_code) = LOWER(?) AND LOWER(size) = LOWER(?) LIMIT 1",
+        (code, size),
+    ).fetchone(), True
+
+
 def inventory_rows():
     rows = []
     for p in inventory_query():
@@ -613,6 +698,146 @@ def load_stock():
         flash(f"Carico salvato. Documento {document_number}.", "success")
         return redirect(url_for("movements", movement_type="CARICO"))
     return render_template("load.html")
+
+
+@app.route("/load/template.xlsx")
+@login_required
+def load_template_xlsx():
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Carico"
+    headers = [
+        "codice_prodotto", "nome_prodotto", "descrizione", "taglia", "quantita",
+        "prezzo_acquisto", "prezzo_vendita", "soglia_minima", "note"
+    ]
+    ws.append(headers)
+    ws.append(["TSH001", "T-shirt bianca", "T-shirt cotone girocollo", "S", 10, 8.00, 19.90, 5, "primo carico"])
+    ws.append(["TSH001", "T-shirt bianca", "T-shirt cotone girocollo", "M", 15, 8.00, 19.90, 5, "primo carico"])
+    ws.append(["FEL002", "Felpa nera", "Felpa cappuccio unisex", "L", 8, 18.00, 39.90, 3, ""])
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = PatternFill("solid", fgColor="1F2937")
+        cell.alignment = Alignment(horizontal="center")
+    widths = [18, 24, 34, 10, 12, 18, 18, 14, 28]
+    for idx, width in enumerate(widths, 1):
+        ws.column_dimensions[ws.cell(1, idx).column_letter].width = width
+    for row in ws.iter_rows(min_row=2, min_col=6, max_col=7):
+        for cell in row:
+            cell.number_format = '€ #,##0.00'
+    stream = io.BytesIO()
+    wb.save(stream)
+    stream.seek(0)
+    return send_file(
+        stream,
+        as_attachment=True,
+        download_name="modello_carico_magazzino.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@app.route("/load/import", methods=["GET", "POST"])
+@login_required
+def import_load_excel():
+    report = None
+    if request.method == "POST":
+        uploaded = request.files.get("excel_file")
+        if not uploaded or uploaded.filename == "":
+            flash("Carica un file Excel .xlsx.", "danger")
+            return redirect(url_for("import_load_excel"))
+        if not uploaded.filename.lower().endswith(".xlsx"):
+            flash("Formato non valido. Usa un file .xlsx.", "danger")
+            return redirect(url_for("import_load_excel"))
+
+        try:
+            wb = load_workbook(uploaded, data_only=True)
+            ws = wb.active
+        except Exception:
+            flash("File Excel non leggibile. Controlla che sia un .xlsx valido.", "danger")
+            return redirect(url_for("import_load_excel"))
+
+        header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True), None)
+        if not header_row:
+            flash("Il file Excel è vuoto.", "danger")
+            return redirect(url_for("import_load_excel"))
+        headers = [normalize_excel_header(h) for h in header_row]
+        rows_to_import = []
+        errors = []
+
+        for excel_row_number, values in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not values or all(v is None or str(v).strip() == "" for v in values):
+                continue
+            row = {headers[i]: values[i] if i < len(values) else None for i in range(len(headers))}
+            try:
+                code = str(first_present(row, ["codice_prodotto", "codice", "codice_articolo", "sku", "code"])).strip().upper()
+                name = str(first_present(row, ["nome_prodotto", "nome", "prodotto", "articolo", "product_name"])).strip()
+                description = str(first_present(row, ["descrizione", "descrizione_prodotto", "description"], "")).strip()
+                size = str(first_present(row, ["taglia", "size"], "")).strip().upper()
+                qty = to_int_quantity(first_present(row, ["quantita", "quantita_caricata", "pezzi", "qta", "quantity"]))
+                purchase_price = to_float_price(first_present(row, ["prezzo_acquisto", "costo", "purchase_price"], 0), 0)
+                sale_price = to_float_price(first_present(row, ["prezzo_vendita", "vendita", "sale_price"], 0), 0)
+                min_stock = int(float(str(first_present(row, ["soglia_minima", "min_stock", "scorta_minima"], 0)).replace(",", ".")))
+                notes = str(first_present(row, ["note", "notes"], "")).strip()
+                if not code:
+                    raise ValueError("codice_prodotto mancante")
+                if not name:
+                    raise ValueError("nome_prodotto mancante")
+                if not size:
+                    raise ValueError("taglia mancante")
+                if purchase_price < 0 or sale_price < 0:
+                    raise ValueError("prezzi negativi")
+                rows_to_import.append({
+                    "row": excel_row_number,
+                    "code": code,
+                    "name": name,
+                    "description": description,
+                    "size": size,
+                    "quantity": qty,
+                    "purchase_price": purchase_price,
+                    "sale_price": sale_price,
+                    "min_stock": max(min_stock, 0),
+                    "notes": notes,
+                })
+            except Exception as exc:
+                errors.append(f"Riga {excel_row_number}: {exc}")
+
+        if errors:
+            report = {"imported": 0, "created": 0, "updated": 0, "errors": errors, "rows": []}
+            return render_template("import_load.html", report=report)
+
+        imported = 0
+        created = 0
+        updated = 0
+        imported_rows = []
+        try:
+            for item in rows_to_import:
+                product, was_created = create_or_update_product_from_import(
+                    item["code"], item["name"], item["description"], item["size"],
+                    item["purchase_price"], item["sale_price"], item["min_stock"]
+                )
+                document_number = generate_document_number("CARICO")
+                get_db().execute(
+                    """
+                    INSERT INTO stock_movements
+                    (movement_type, product_id, quantity, recipient, operator_id, notes, document_number)
+                    VALUES ('CARICO', ?, ?, NULL, ?, ?, ?)
+                    """,
+                    (product["id"], item["quantity"], g.user["id"], item["notes"], document_number),
+                )
+                imported += 1
+                if was_created:
+                    created += 1
+                else:
+                    updated += 1
+                imported_rows.append({**item, "document_number": document_number, "created": was_created})
+            get_db().commit()
+            report = {"imported": imported, "created": created, "updated": updated, "errors": [], "rows": imported_rows}
+            flash(f"Importazione completata: {imported} righe caricate, {created} articoli creati, {updated} articoli aggiornati.", "success")
+        except Exception as exc:
+            get_db().rollback()
+            report = {"imported": 0, "created": 0, "updated": 0, "errors": [str(exc)], "rows": []}
+            flash("Importazione annullata: nessun carico è stato salvato.", "danger")
+
+    return render_template("import_load.html", report=report)
 
 
 @app.route("/unload", methods=["GET", "POST"])

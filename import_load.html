@@ -1,0 +1,120 @@
+{% extends 'layout.html' %}
+{% set page_title = 'Importa carico da Excel' %}
+{% set page_subtitle = 'Carica molte taglie o prodotti in un’unica operazione partendo da un file .xlsx.' %}
+{% block content %}
+<section class="card">
+  <div class="card-head">
+    <h2>Importazione carico</h2>
+    <span class="badge">operatore: {{ g.user.name }}</span>
+  </div>
+
+  <p class="muted">
+    Usa un file Excel con una riga per ogni variante/taglia. Se un articolo non esiste, il sistema lo crea automaticamente;
+    se esiste già, registra solo il carico e aggiorna i dati descrittivi/prezzi.
+  </p>
+
+  <div class="actions" style="margin-bottom:18px">
+    <a class="btn secondary" href="{{ url_for('load_template_xlsx') }}">Scarica modello Excel</a>
+    <a class="btn ghost" href="{{ url_for('load_stock') }}">Torna al carico manuale</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="form-stack">
+    <label>File Excel .xlsx</label>
+    <input type="file" name="excel_file" accept=".xlsx" required>
+    <button class="btn primary" type="submit">Importa carico</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Formato colonne consigliato</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>codice_prodotto</th>
+          <th>nome_prodotto</th>
+          <th>descrizione</th>
+          <th>taglia</th>
+          <th>quantita</th>
+          <th>prezzo_acquisto</th>
+          <th>prezzo_vendita</th>
+          <th>soglia_minima</th>
+          <th>note</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TSH001</td>
+          <td>T-shirt bianca</td>
+          <td>T-shirt cotone</td>
+          <td>M</td>
+          <td>20</td>
+          <td>8</td>
+          <td>19.90</td>
+          <td>5</td>
+          <td>primo carico</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">Colonne obbligatorie: <strong>codice_prodotto</strong>, <strong>nome_prodotto</strong>, <strong>taglia</strong>, <strong>quantita</strong>.</p>
+</section>
+
+{% if report %}
+<section class="card">
+  <div class="card-head">
+    <h2>Risultato importazione</h2>
+    {% if report.errors %}
+      <span class="badge danger">errori</span>
+    {% else %}
+      <span class="badge success">completata</span>
+    {% endif %}
+  </div>
+
+  {% if report.errors %}
+    <div class="flash danger">
+      <strong>Importazione non eseguita.</strong> Correggi il file Excel e riprova.
+    </div>
+    <ul class="error-list">
+      {% for error in report.errors %}
+        <li>{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="stats-grid">
+      <div class="stat"><span>Righe caricate</span><strong>{{ report.imported }}</strong></div>
+      <div class="stat"><span>Articoli creati</span><strong>{{ report.created }}</strong></div>
+      <div class="stat"><span>Articoli esistenti aggiornati</span><strong>{{ report.updated }}</strong></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Riga</th>
+            <th>Documento</th>
+            <th>Codice</th>
+            <th>Prodotto</th>
+            <th>Taglia</th>
+            <th>Quantità</th>
+            <th>Esito</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in report.rows %}
+          <tr>
+            <td>{{ r.row }}</td>
+            <td>{{ r.document_number }}</td>
+            <td>{{ r.code }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.size }}</td>
+            <td>{{ r.quantity }}</td>
+            <td>{% if r.created %}Articolo creato{% else %}Articolo esistente{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

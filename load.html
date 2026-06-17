@@ -4,6 +4,11 @@
 {% block content %}
 <section class="card narrow">
   <div class="card-head"><h2>Nuovo carico</h2><span class="badge">operatore: {{ g.user.name }}</span></div>
+  <p class="muted">Per caricare molte taglie/prodotti insieme puoi usare l’importazione da Excel.</p>
+  <div class="actions" style="margin-bottom:16px">
+    <a class="btn secondary" href="{{ url_for('import_load_excel') }}">Importa carico da Excel</a>
+    <a class="btn ghost" href="{{ url_for('load_template_xlsx') }}">Scarica modello Excel</a>
+  </div>
   <form method="post" class="form-stack">
     <label>Codice articolo oppure nome prodotto</label>
     <input name="identifier" required placeholder="TSH001 oppure T-shirt bianca">

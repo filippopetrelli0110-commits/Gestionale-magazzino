@@ -20,7 +20,7 @@
     <nav>
       <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
       <a href="{{ url_for('products') }}" class="{% if request.endpoint in ['products','edit_product'] %}active{% endif %}">Articoli</a>
-      <a href="{{ url_for('load_stock') }}" class="{% if request.endpoint == 'load_stock' %}active{% endif %}">Carico magazzino</a>
+      <a href="{{ url_for('load_stock') }}" class="{% if request.endpoint in ['load_stock','import_load_excel'] %}active{% endif %}">Carico magazzino</a>
       <a href="{{ url_for('unload_stock') }}" class="{% if request.endpoint == 'unload_stock' %}active{% endif %}">Scarico magazzino</a>
       <a href="{{ url_for('movements') }}" class="{% if request.endpoint in ['movements','print_movement'] %}active{% endif %}">Storico movimenti</a>
       <a href="{{ url_for('exports') }}" class="{% if request.endpoint in ['exports','export_print'] %}active{% endif %}">Esportazioni</a>
