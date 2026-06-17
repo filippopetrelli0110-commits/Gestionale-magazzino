@@ -238,6 +238,22 @@ def init_db():
             """
         )
 
+    # Migrazioni leggere: servono se Supabase contiene tabelle create da una versione precedente.
+    # CREATE TABLE IF NOT EXISTS non aggiorna automaticamente le colonne mancanti.
+    if USE_POSTGRES:
+        db.executescript(
+            """
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS min_stock INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            """
+        )
+    else:
+        product_cols = [r["name"] for r in db.execute("PRAGMA table_info(products)").fetchall()]
+        if "min_stock" not in product_cols:
+            db.execute("ALTER TABLE products ADD COLUMN min_stock INTEGER NOT NULL DEFAULT 0")
+        if "updated_at" not in product_cols:
+            db.execute("ALTER TABLE products ADD COLUMN updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP")
+
     # Utenti demo, creati solo se il database è vuoto.
     users_count = db.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
     if users_count == 0:
@@ -383,6 +399,26 @@ def inventory_rows():
             "min_stock": p["min_stock"],
         })
     return rows
+
+
+@app.route("/__status")
+def status():
+    try:
+        db = get_db()
+        users = db.execute("SELECT COUNT(*) AS c FROM users").fetchone()["c"]
+        products = db.execute("SELECT COUNT(*) AS c FROM products").fetchone()["c"]
+        return {
+            "ok": True,
+            "database": "postgres/supabase" if USE_POSTGRES else "sqlite",
+            "users": int(users),
+            "products": int(products),
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "error": type(exc).__name__,
+            "message": str(exc),
+        }, 500
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -877,5 +913,5 @@ init_db()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    debug = os.environ.get("FLASK_DEBUG", "1") == "1"
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(host="0.0.0.0", port=port, debug=debug)
