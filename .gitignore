@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Database locale
+warehouse.db
+warehouse.db-*
+
+# Env
+.env
+
+# OS/editor
+.DS_Store
+.vscode/

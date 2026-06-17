@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: gestionale-magazzino
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --workers 1 --threads 4 --timeout 120 --bind 0.0.0.0:$PORT app:app
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: SESSION_COOKIE_SECURE
+        value: "1"
