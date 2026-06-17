@@ -31,8 +31,7 @@ if psycopg2 is not None:
     DB_INTEGRITY_ERRORS = (sqlite3.IntegrityError, psycopg2.IntegrityError)
 else:
     DB_INTEGRITY_ERRORS = (sqlite3.IntegrityError,)
-
-app = Flask(__name__)
+app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="/static")
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "cambia-questa-chiave-in-produzione")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
